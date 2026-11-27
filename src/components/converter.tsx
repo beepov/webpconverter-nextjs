@@ -287,17 +287,17 @@ export default function Converter() {
               setDragging(false);
               addFiles(event.dataTransfer.files);
             }}
-            className={`dropzone flex min-h-[250px] flex-col items-center justify-center rounded-2xl px-5 py-9 text-center outline-none ${dragging ? "active" : ""}`}
+            className={`dropzone flex min-h-[210px] flex-col items-center justify-center rounded-2xl px-5 py-6 text-center outline-none ${dragging ? "active" : ""}`}
           >
-            <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white text-[#16875b] shadow-sm">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-[#16875b] shadow-sm">
               <UploadCloud size={27} />
             </div>
             <h2 className="text-lg font-semibold">Drop your images here</h2>
             <p className="mt-1.5 text-sm text-[#718078]">or click to browse from your device</p>
-            <span className="mt-5 inline-flex items-center gap-2 rounded-xl bg-[#176f4e] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125c40]">
+            <span className="mt-3 inline-flex items-center gap-2 rounded-xl bg-[#176f4e] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#125c40]">
               <ImagePlus size={16} /> Choose images
             </span>
-            <p className="mt-4 text-xs text-[#8a9991]">PNG or JPG · Up to 10 MB per image · Multiple files supported</p>
+            <p className="mt-3 text-xs text-[#8a9991]">PNG or JPG · Up to 10 MB per image · Multiple files supported</p>
           </div>
           <input
             ref={inputRef}
