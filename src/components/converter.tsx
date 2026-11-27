@@ -434,12 +434,30 @@ export default function Converter() {
                 <h4 className="text-sm font-semibold">Image dimensions</h4>
               </div>
               <p className="mt-1 text-xs leading-5 text-[#8a9991]">Choose the output resolution for converted images.</p>
-              <div className="mt-4 grid grid-cols-2 gap-2">
-                <button type="button" onClick={() => setResizeMode("original")} aria-pressed={resizeMode === "original"}
-                  className={`rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${resizeMode === "original" ? "border-[#176f4e] bg-[#eaf6ee] text-[#176f4e]" : "border-[#e5ebe7] bg-white text-[#718078] hover:border-[#b9d6c3]"}`}>Original size</button>
-                <button type="button" onClick={() => setResizeMode("custom")} aria-pressed={resizeMode === "custom"}
-                  className={`rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${resizeMode === "custom" ? "border-[#176f4e] bg-[#eaf6ee] text-[#176f4e]" : "border-[#e5ebe7] bg-white text-[#718078] hover:border-[#b9d6c3]"}`}>Custom size</button>
-              </div>
+              <div className="mt-4 space-y-3">
+              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 transition ${resizeMode === "original" ? "border-[#176f4e] bg-[#eaf6ee]" : "border-[#e5ebe7] bg-white hover:border-[#b9d6c3]"}`}>
+                <input
+                  type="radio"
+                  name="resize-mode"
+                  value="original"
+                  checked={resizeMode === "original"}
+                  onChange={() => setResizeMode("original")}
+                  className="h-4 w-4 accent-[#176f4e]"
+                />
+                <span className="text-xs font-semibold text-[#43534a]">Original size</span>
+              </label>
+              <label className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-3 transition ${resizeMode === "custom" ? "border-[#176f4e] bg-[#eaf6ee]" : "border-[#e5ebe7] bg-white hover:border-[#b9d6c3]"}`}>
+                <input
+                  type="radio"
+                  name="resize-mode"
+                  value="custom"
+                  checked={resizeMode === "custom"}
+                  onChange={() => setResizeMode("custom")}
+                  className="h-4 w-4 accent-[#176f4e]"
+                />
+                <span className="text-xs font-semibold text-[#43534a]">Custom size</span>
+              </label>
+            </div>
               {resizeMode === "custom" && (
                 <div className="mt-4 space-y-3">
                   <div className="grid grid-cols-2 gap-3">
