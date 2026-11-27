@@ -364,11 +364,23 @@ export default function Converter() {
                         {item.status === "converting" && <LoaderCircle className="animate-spin text-[#16875b]" size={18} />}
                         {item.status === "done" && (
                           <>
-                            <button onClick={() => setPreviewItemId(item.id)} className="inline-flex items-center gap-1 rounded-lg bg-[#eaf6ee] px-2.5 py-1.5 text-[11px] font-semibold text-[#176f4e] hover:bg-[#d9efdf]">
-                              <FileImage size={13} /> Preview
+                            <button
+                              type="button"
+                              onClick={() => setPreviewItemId(item.id)}
+                              aria-label={`Preview ${item.file.name}`}
+                              title="Preview"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#eaf6ee] text-[#176f4e] transition hover:bg-[#d9efdf]"
+                            >
+                              <FileImage size={16} />
                             </button>
-                            <button onClick={() => download(item)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#176f4e] px-3 py-2 text-xs font-semibold text-white transition hover:bg-[#125c40]">
-                              <ArrowDownToLine size={14} /> Download
+                            <button
+                              type="button"
+                              onClick={() => download(item)}
+                              aria-label={`Download ${item.file.name} as WebP`}
+                              title="Download WebP"
+                              className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#176f4e] text-white transition hover:bg-[#125c40]"
+                            >
+                              <ArrowDownToLine size={16} />
                             </button>
                           </>
                         )}
