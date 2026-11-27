@@ -261,7 +261,8 @@ export default function Converter() {
           <Sparkles size={13} /> A simpler way to optimize images
         </div>
         <h1 className="text-4xl font-semibold tracking-[-0.055em] text-[#17221f] sm:text-6xl">
-          Make your images<br className="hidden sm:block" /> <span className="text-[#16875b]">lighter.</span> Keep them beautiful.
+          Convert to <span className="text-[#16875b]">WebP.</span>
+          <br className="hidden sm:block" /> Make the web faster.
         </h1>
         <p className="mx-auto mt-5 max-w-xl text-base leading-7 text-[#718078] sm:text-lg">
           Convert PNG and JPEG images to WebP in seconds. Tune the quality, compare file sizes, and download your optimized images.
