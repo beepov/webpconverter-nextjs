@@ -268,7 +268,7 @@ export default function Converter() {
         </p>
       </section>
 
-      <section className="mx-auto mt-10 grid max-w-5xl items-start gap-5 lg:grid-cols-[1fr_300px]">
+      <section className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-5">
         <div className="surface rounded-3xl p-4 sm:p-6">
           <div
             role="button"
@@ -420,7 +420,7 @@ export default function Converter() {
           )}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="grid items-start gap-5 md:grid-cols-[1.35fr_1fr]">
           <div className="surface rounded-3xl p-5">
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eaf6ee] text-[#16875b]"><Sparkles size={17} /></div>
