@@ -83,6 +83,7 @@ export default function Converter() {
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
+  const [previewItemId, setPreviewItemId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const itemsRef = useRef<Item[]>([]);
 
@@ -218,6 +219,7 @@ export default function Converter() {
       if (item.outputUrl) URL.revokeObjectURL(item.outputUrl);
     }
     setItems((current) => current.filter((entry) => entry.id !== id));
+    if (previewItemId === id) setPreviewItemId(null);
   };
 
   const clearAll = () => {
@@ -226,6 +228,7 @@ export default function Converter() {
       if (item.outputUrl) URL.revokeObjectURL(item.outputUrl);
     }
     setItems([]);
+    setPreviewItemId(null);
     setNotice("");
     if (inputRef.current) inputRef.current.value = "";
   };
@@ -234,6 +237,7 @@ export default function Converter() {
   const remainingCount = items.filter((item) => item.status === "ready" || item.status === "error").length;
   const ready = remainingCount > 0;
   const allDone = items.length > 0 && completed === items.length;
+  const previewItem = items.find((item) => item.id === previewItemId && item.status === "done" && item.outputUrl);
 
   return (
     <main className="min-h-screen px-4 pb-8">
@@ -359,8 +363,8 @@ export default function Converter() {
                       <div className="flex items-center justify-end gap-2">
                         {item.status === "converting" && <LoaderCircle className="animate-spin text-[#16875b]" size={18} />}
                         {item.status === "done" && (
-                          <button onClick={() => download(item)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#eaf6ee] px-3 py-2 text-xs font-semibold text-[#176f4e] hover:bg-[#d9efdf]">
-                            <ArrowDownToLine size={14} /> Download
+                          <button onClick={() => setPreviewItemId(item.id)} className="inline-flex items-center gap-1.5 rounded-lg bg-[#eaf6ee] px-3 py-2 text-xs font-semibold text-[#176f4e] hover:bg-[#d9efdf]">
+                            <FileImage size={14} /> Preview
                           </button>
                         )}
                         <button
@@ -557,6 +561,71 @@ export default function Converter() {
           </p>
         </div>
       </section>
+      {previewItem && previewItem.outputUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-[#102019]/65 p-4 backdrop-blur-sm"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPreviewItemId(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="preview-title"
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-5 shadow-2xl sm:p-7"
+          >
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="preview-title" className="text-lg font-semibold text-[#17221f]">Preview converted image</h2>
+                <p className="mt-1 max-w-xl truncate text-xs text-[#8a9991]">{previewItem.file.name}</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setPreviewItemId(null)}
+                aria-label="Close image preview"
+                className="rounded-lg p-2 text-[#718078] transition hover:bg-[#f1f5f2] hover:text-[#17221f]"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-4 md:grid-cols-2">
+              <div className="min-w-0">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-[#43534a]">Original</h3>
+                  <span className="text-xs text-[#8a9991]">{previewItem.sourceWidth} × {previewItem.sourceHeight}</span>
+                </div>
+                <div className="flex min-h-56 items-center justify-center overflow-hidden rounded-2xl border border-[#e5ebe7] bg-[#f5f8f5] p-2">
+                  <img src={previewItem.previewUrl} alt={`Original image: ${previewItem.file.name}`} className="max-h-[48vh] max-w-full object-contain" />
+                </div>
+                <p className="mt-2 text-xs text-[#718078]">{formatBytes(previewItem.file.size)}</p>
+              </div>
+              <div className="min-w-0">
+                <div className="mb-2 flex items-center justify-between gap-2">
+                  <h3 className="text-sm font-semibold text-[#176f4e]">WebP result</h3>
+                  <span className="text-xs text-[#8a9991]">{previewItem.outputWidth} × {previewItem.outputHeight}</span>
+                </div>
+                <div className="flex min-h-56 items-center justify-center overflow-hidden rounded-2xl border border-[#b9d6c3] bg-[#f5f8f5] p-2">
+                  <img src={previewItem.outputUrl} alt={`Converted WebP image: ${previewItem.file.name}`} className="max-h-[48vh] max-w-full object-contain" />
+                </div>
+                <p className="mt-2 text-xs text-[#718078]">{formatBytes(previewItem.outputSize ?? 0)}</p>
+              </div>
+            </div>
+
+            <div className="mt-5 flex flex-col-reverse gap-2 border-t border-[#e8eee9] pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-[#718078]">Original files remain unchanged on your device.</p>
+              <div className="flex gap-2">
+                <button type="button" onClick={() => setPreviewItemId(null)} className="rounded-xl border border-[#dce7df] px-4 py-2.5 text-xs font-semibold text-[#526158] transition hover:bg-[#f5f8f5]">Close</button>
+                <button type="button" onClick={() => download(previewItem)} className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#176f4e] px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-[#125c40]">
+                  <ArrowDownToLine size={15} /> Download WebP
+                </button>
+              </div>
+            </div>
+          </section>
+        </div>
+      )}
+
       <footer className="mx-auto max-w-5xl text-center text-xs text-[#9aa79f]">
 
         <div className="border-gray-200 pt-4 text-center text-sm text-gray-500">
