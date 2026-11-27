@@ -268,7 +268,7 @@ export default function Converter() {
         </p>
       </section>
 
-      <section className="mx-auto mt-10 grid max-w-5xl grid-cols-1 gap-5">
+      <section className="mx-auto mt-10 grid max-w-5xl items-start gap-5 lg:grid-cols-[minmax(0,1fr)_360px]">
         <div className="surface rounded-3xl p-4 sm:p-6">
           <div
             role="button"
@@ -420,7 +420,7 @@ export default function Converter() {
           )}
         </div>
 
-        <aside className="grid items-start gap-5 md:grid-cols-[1.35fr_1fr]">
+        <aside className="min-w-0">
           <div className="surface rounded-3xl p-5">
             <div className="flex items-center gap-2">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#eaf6ee] text-[#16875b]"><Sparkles size={17} /></div>
@@ -520,15 +520,16 @@ export default function Converter() {
             </div>
           </div>
 
-          <div className="surface rounded-3xl p-5">
-            <h3 className="text-sm font-semibold">Private by design</h3>
-            <div className="mt-4 space-y-3">
-              <div className="flex gap-2.5"><ShieldCheck size={17} className="mt-0.5 shrink-0 text-[#16875b]" /><p className="text-xs leading-5 text-[#718078]">No account or sign-up required.</p></div>
-              <div className="flex gap-2.5"><LockKeyhole size={17} className="mt-0.5 shrink-0 text-[#16875b]" /><p className="text-xs leading-5 text-[#718078]">Files are processed in memory, not saved to an image storage bucket.</p></div>
-              <div className="flex gap-2.5"><RefreshCw size={17} className="mt-0.5 shrink-0 text-[#16875b]" /><p className="text-xs leading-5 text-[#718078]">Your original files stay on your device.</p></div>
-            </div>
-          </div>
         </aside>
+      </section>
+
+      <section className="surface mx-auto mt-5 max-w-5xl rounded-3xl p-5 sm:p-6">
+        <h3 className="text-sm font-semibold">Private by design</h3>
+        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-2.5"><ShieldCheck size={17} className="shrink-0 text-[#16875b]" /><p className="text-xs leading-5 text-[#718078]">No account or sign-up required.</p></div>
+          <div className="flex items-center gap-2.5"><LockKeyhole size={17} className="shrink-0 text-[#16875b]" /><p className="text-xs leading-5 text-[#718078]">Files are processed in memory, not saved to an image storage bucket.</p></div>
+          <div className="flex items-center gap-2.5"><RefreshCw size={17} className="shrink-0 text-[#16875b]" /><p className="text-xs leading-5 text-[#718078]">Your original files stay on your device.</p></div>
+        </div>
       </section>
 
       <section className="mx-auto mt-12 grid max-w-5xl gap-4 border-t border-[#e5ebe7] pt-8 sm:grid-cols-3">
