@@ -18,6 +18,10 @@ type Item = {
   status: "ready" | "converting" | "done" | "error";
   outputUrl?: string;
   outputSize?: number;
+  sourceWidth: number;
+  sourceHeight: number;
+  outputWidth?: number;
+  outputHeight?: number;
   error?: string;
 };
 
@@ -33,9 +37,49 @@ function makeId() {
     : `${Date.now()}-${Math.random()}`;
 }
 
+function getOutputDimensions(sourceWidth: number, sourceHeight: number, widthValue: string, heightValue: string, keepAspectRatio: boolean, preventUpscaling: boolean) {
+  const requestedWidth = Number(widthValue) > 0 ? Math.min(12000, Math.round(Number(widthValue))) : undefined;
+  const requestedHeight = Number(heightValue) > 0 ? Math.min(12000, Math.round(Number(heightValue))) : undefined;
+  if (!requestedWidth && !requestedHeight) return { width: sourceWidth, height: sourceHeight };
+  if (keepAspectRatio) {
+    const scale = requestedWidth && requestedHeight
+      ? Math.min(requestedWidth / sourceWidth, requestedHeight / sourceHeight)
+      : requestedWidth ? requestedWidth / sourceWidth : requestedHeight! / sourceHeight;
+    const safeScale = preventUpscaling ? Math.min(scale, 1) : scale;
+    return { width: Math.max(1, Math.round(sourceWidth * safeScale)), height: Math.max(1, Math.round(sourceHeight * safeScale)) };
+  }
+  return {
+    width: Math.max(1, Math.round(preventUpscaling ? Math.min(requestedWidth ?? sourceWidth, sourceWidth) : requestedWidth ?? sourceWidth)),
+    height: Math.max(1, Math.round(preventUpscaling ? Math.min(requestedHeight ?? sourceHeight, sourceHeight) : requestedHeight ?? sourceHeight)),
+  };
+}
+
+async function resizeImage(file: File, width: number, height: number): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  try {
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Your browser could not prepare the resized image.");
+    context.drawImage(bitmap, 0, 0, width, height);
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Could not resize this image.")), file.type,
+        file.type === "image/jpeg" ? 0.96 : undefined);
+    });
+  } finally {
+    bitmap.close();
+  }
+}
+
 export default function Converter() {
   const [items, setItems] = useState<Item[]>([]);
   const [quality, setQuality] = useState(82);
+  const [resizeMode, setResizeMode] = useState<"original" | "custom">("original");
+  const [targetWidth, setTargetWidth] = useState("1200");
+  const [targetHeight, setTargetHeight] = useState("");
+  const [keepAspectRatio, setKeepAspectRatio] = useState(true);
+  const [preventUpscaling, setPreventUpscaling] = useState(true);
   const [dragging, setDragging] = useState(false);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
@@ -73,15 +117,22 @@ export default function Converter() {
         errors.push(`${file.name}: file is empty.`);
         continue;
       }
-      next.push({
-        id: makeId(),
-        file,
-        previewUrl: URL.createObjectURL(file),
-        status: "ready",
-      });
+      next.push({ id: makeId(), file, previewUrl: URL.createObjectURL(file), status: "ready", sourceWidth: 0, sourceHeight: 0 });
     }
 
-    setItems((current) => [...current, ...next]);
+    const measured = await Promise.all(next.map(async (item) => {
+      try {
+        const bitmap = await createImageBitmap(item.file);
+        const dimensions = { sourceWidth: bitmap.width, sourceHeight: bitmap.height };
+        bitmap.close();
+        return { ...item, ...dimensions };
+      } catch {
+        URL.revokeObjectURL(item.previewUrl);
+        errors.push(`${item.file.name}: this image could not be opened.`);
+        return null;
+      }
+    }));
+    setItems((current) => [...current, ...measured.filter((item): item is Item => item !== null)]);
     setNotice(errors.join(" "));
   }, []);
 
@@ -94,10 +145,16 @@ export default function Converter() {
 
     updateItem(item.id, { status: "converting", error: undefined });
 
+    const outputDimensions = resizeMode === "custom"
+      ? getOutputDimensions(item.sourceWidth, item.sourceHeight, targetWidth, targetHeight, keepAspectRatio, preventUpscaling)
+      : { width: item.sourceWidth, height: item.sourceHeight };
+    const shouldResize = outputDimensions.width !== item.sourceWidth || outputDimensions.height !== item.sourceHeight;
+    const uploadBlob = shouldResize ? await resizeImage(item.file, outputDimensions.width, outputDimensions.height) : item.file;
+
     const response = await fetch(`${API_URL}/convert?quality=${quality}`, {
       method: "POST",
-      headers: { "Content-Type": item.file.type, "X-API-Key": process.env.NEXT_PUBLIC_API_KEY ?? "", },
-      body: item.file,
+      headers: { "Content-Type": uploadBlob.type || item.file.type, "X-API-Key": process.env.NEXT_PUBLIC_API_KEY ?? "", },
+      body: uploadBlob,
     });
 
     if (!response.ok) {
@@ -119,6 +176,8 @@ export default function Converter() {
       status: "done",
       outputUrl,
       outputSize: blob.size,
+      outputWidth: outputDimensions.width,
+      outputHeight: outputDimensions.height,
     });
   };
 
@@ -282,10 +341,10 @@ export default function Converter() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-semibold">{item.file.name}</p>
-                          <p className="mt-1 text-xs text-[#8a9991]">{formatBytes(item.file.size)} · {item.file.type === "image/png" ? "PNG" : "JPEG"}</p>
+                          <p className="mt-1 text-xs text-[#8a9991]">{formatBytes(item.file.size)} · {item.file.type === "image/png" ? "PNG" : "JPEG"} · {item.sourceWidth} × {item.sourceHeight}</p>
                           {item.status === "done" ? (
                             <p className="mt-1 text-xs font-medium text-[#16875b]">
-                              {formatBytes(item.outputSize ?? 0)} WebP · {saved >= 0 ? `${percent}% smaller` : `${Math.abs(percent)}% larger`}
+                              {formatBytes(item.outputSize ?? 0)} WebP · {item.outputWidth} × {item.outputHeight} · {saved >= 0 ? `${percent}% smaller` : `${Math.abs(percent)}% larger`}
                             </p>
                           ) : item.status === "error" ? (
                             <p className="mt-1 text-xs text-red-600">{item.error}</p>
@@ -368,6 +427,58 @@ export default function Converter() {
               <p className="text-xs font-semibold text-[#43534a]">Recommended: 80–85%</p>
               <p className="mt-1 text-xs leading-5 text-[#829087]">A good balance between visual quality and file size for most images.</p>
             </div>
+            <div className="my-6 border-t border-[#e8eee9]" />
+            <div>
+              <div className="flex items-center gap-2">
+                <FileImage size={16} className="text-[#16875b]" />
+                <h4 className="text-sm font-semibold">Image dimensions</h4>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-[#8a9991]">Choose the output resolution for converted images.</p>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button type="button" onClick={() => setResizeMode("original")} aria-pressed={resizeMode === "original"}
+                  className={`rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${resizeMode === "original" ? "border-[#176f4e] bg-[#eaf6ee] text-[#176f4e]" : "border-[#e5ebe7] bg-white text-[#718078] hover:border-[#b9d6c3]"}`}>Original size</button>
+                <button type="button" onClick={() => setResizeMode("custom")} aria-pressed={resizeMode === "custom"}
+                  className={`rounded-xl border px-3 py-2.5 text-xs font-semibold transition ${resizeMode === "custom" ? "border-[#176f4e] bg-[#eaf6ee] text-[#176f4e]" : "border-[#e5ebe7] bg-white text-[#718078] hover:border-[#b9d6c3]"}`}>Custom size</button>
+              </div>
+              {resizeMode === "custom" && (
+                <div className="mt-4 space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <label className="block text-xs font-medium text-[#43534a]">Width (px)
+                      <input type="number" min="1" max="12000" inputMode="numeric" value={targetWidth} onChange={(event) => setTargetWidth(event.target.value)} placeholder="Width"
+                        className="mt-1.5 w-full rounded-lg border border-[#dce7df] bg-white px-3 py-2.5 text-sm text-[#17221f] outline-none focus:border-[#16875b] focus:ring-2 focus:ring-[#16875b]/10" />
+                    </label>
+                    <label className="block text-xs font-medium text-[#43534a]">Height (px)
+                      <input type="number" min="1" max="12000" inputMode="numeric" value={targetHeight} onChange={(event) => setTargetHeight(event.target.value)} placeholder="Auto"
+                        className="mt-1.5 w-full rounded-lg border border-[#dce7df] bg-white px-3 py-2.5 text-sm text-[#17221f] outline-none focus:border-[#16875b] focus:ring-2 focus:ring-[#16875b]/10" />
+                    </label>
+                  </div>
+                  <p className="text-[11px] leading-5 text-[#8a9991]">Leave a dimension empty to calculate it from the original aspect ratio.</p>
+                  <label className="flex cursor-pointer items-start gap-2.5 text-xs text-[#526158]">
+                    <input type="checkbox" checked={keepAspectRatio} onChange={(event) => setKeepAspectRatio(event.target.checked)} className="mt-0.5 accent-[#176f4e]" />
+                    <span><span className="font-semibold">Maintain aspect ratio</span><span className="mt-0.5 block text-[#8a9991]">Fit inside the requested dimensions without stretching.</span></span>
+                  </label>
+                  <label className="flex cursor-pointer items-center gap-2.5 text-xs text-[#526158]">
+                    <input type="checkbox" checked={preventUpscaling} onChange={(event) => setPreventUpscaling(event.target.checked)} className="accent-[#176f4e]" />
+                    Prevent enlarging smaller images
+                  </label>
+                  {items.length > 0 && (
+                    <div className="rounded-xl bg-[#f5f8f5] p-3">
+                      <p className="text-[11px] font-semibold text-[#43534a]">Output size preview</p>
+                      <div className="mt-2 space-y-1.5">
+                        {items.slice(0, 3).map((item) => {
+                          const dimensions = getOutputDimensions(item.sourceWidth, item.sourceHeight, targetWidth, targetHeight, keepAspectRatio, preventUpscaling);
+                          return <div key={item.id} className="flex items-center justify-between gap-2 text-[11px] text-[#718078]">
+                            <span className="min-w-0 truncate">{item.file.name}</span>
+                            <span className="shrink-0 font-medium text-[#176f4e]">{dimensions.width} × {dimensions.height}</span>
+                          </div>;
+                        })}
+                        {items.length > 3 && <p className="pt-1 text-[10px] text-[#8a9991]">And {items.length - 3} more images…</p>}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="surface rounded-3xl p-5">
@@ -401,8 +512,8 @@ export default function Converter() {
           <p className="mt-3 text-sm leading-7 text-[#718078]">
             WebP Converter makes it easy to convert PNG and JPG images into
             WebP format directly from your browser. Add one image or a batch,
-            choose your preferred WebP quality, compare the original and
-            converted file sizes, and download your optimized images.
+            choose your preferred WebP quality and output dimensions, compare
+            file sizes, and download your optimized images.
           </p>
           <h3 className="mt-6 text-base font-semibold">
             Why use WebP Converter?
