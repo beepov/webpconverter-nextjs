@@ -177,7 +177,7 @@ export default function Converter() {
   const allDone = items.length > 0 && completed === items.length;
 
   return (
-    <main className="min-h-screen px-4 pb-16">
+    <main className="min-h-screen px-4 pb-8">
       <header className="mx-auto flex max-w-6xl items-center justify-between py-6">
         <a href="#" className="flex items-center gap-2.5 font-semibold tracking-tight">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#176f4e] text-white">
@@ -429,7 +429,18 @@ export default function Converter() {
         </div>
       </section>
       <footer className="mx-auto max-w-5xl text-center text-xs text-[#9aa79f]">
-        © {new Date().getFullYear()} ByteLabs · WebP Converter
+
+        <div className="border-gray-200 pt-4 text-center text-sm text-gray-500">
+          © {new Date().getFullYear()} Made with <span className="text-red-500">♥</span> by{" "}
+          <a
+            href="https://bytelabstech.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-semibold text-gray-900 hover:text-blue-500 transition-colors"
+          >
+            ByteLabs
+          </a>
+        </div>
       </footer>
     </main>
   );
