@@ -99,7 +99,7 @@ export default function Converter() {
     };
   }, []);
 
-  const addFiles = useCallback((files: FileList | File[]) => {
+  const addFiles = useCallback(async (files: FileList | File[]) => {
     const incoming = Array.from(files);
     const next: Item[] = [];
     const errors: string[] = [];
