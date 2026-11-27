@@ -268,7 +268,7 @@ export default function Converter() {
         </p>
       </section>
 
-      <section className="mx-auto mt-10 grid max-w-5xl gap-5 lg:grid-cols-[1fr_300px]">
+      <section className="mx-auto mt-10 grid max-w-5xl items-start gap-5 lg:grid-cols-[1fr_300px]">
         <div className="surface rounded-3xl p-4 sm:p-6">
           <div
             role="button"
